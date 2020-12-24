@@ -1,18 +1,19 @@
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 @import './../../colors.scss';
 
-#orders-table{
+#orders-table {
   width: 100% !important;
   color: $dark-grey;
 
-  .table-div{
-    overflow:scroll;
-    min-height:400px;
+  .table-div {
+    overflow: scroll;
+    min-height: 400px;
   }
 
   table {
     width: 100%;
   }
+
   .mat-form-field {
     font-size: 14px;
     width: 100%;
@@ -52,35 +53,39 @@
     // border: 1px solid $ghost-white;
     cursor: pointer;
   }
+
   .example-element-button:hover {
     background: $bright-green;
     border: none;
   }
+
   .example-element-button:disabled {
     background: $pastel-blue;
   }
-  .status-stage{
-    width:20%;
+
+  .status-stage {
+    width: 20%;
     text-align: center;
     border: 1px solid $ghost-white;
     padding: 8px;
     // font-weight: 300;
     background: $pastel-blue;
 
-    span{
+    span {
       display: inline-block
     }
   }
-  .status-complete{
+
+  .status-complete {
     background: $bright-green;
   }
 
-  .delete-order{
+  .delete-order {
     display: flex;
     justify-content: center;
   }
 
-  .delete-button{
+  .delete-button {
     margin: 4px;
     min-height: 40px;
     background: $dark-grey;
@@ -88,20 +93,21 @@
     font-size: 50;
     color: $ghost-white;
     cursor: pointer;
-    border:none;
+    border: none;
   }
+
   .delete-button:hover {
     background: $bright-red;
     color: $ghost-white;
   }
 
-  order-history{
-    width:100%;
+  order-history {
+    width: 100%;
   }
 }
 
-#shipper-dialog{
-  button{
+#shipper-dialog {
+  button {
     min-height: 40px;
     background: $ghost-white;
     min-width: 150px;
@@ -111,38 +117,43 @@
     // border: 1px solid $ghost-white;
     cursor: pointer;
   }
-  button:hover{
+
+  button:hover {
     background: $bright-green;
     // border: none;
   }
-  button:disabled{
+
+  button:disabled {
     background: $pastel-blue;
   }
 }
 
-#delete-order-dialog{
-  button{
+#delete-order-dialog {
+  button {
     min-height: 40px;
     background: $ghost-white;
     min-width: 150px;
     font-size: 50;
     color: $dark-grey;
     cursor: pointer;
-    margin:8px;
+    margin: 8px;
   }
-  .delete{
+
+  .delete {
     background: $dark-grey;
     color: $ghost-white;
   }
-  .delete:hover{
+
+  .delete:hover {
     background: $bright-red;
   }
 
-  .cancel{
+  .cancel {
     background: $light-grey;
     color: $dark-grey;
   }
-  .cancel:hover{
+
+  .cancel:hover {
     background: $dark-grey;
     color: $ghost-white;
   }

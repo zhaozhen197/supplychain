@@ -1,6 +1,6 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import {async, ComponentFixture, TestBed} from '@angular/core/testing';
 
-import { QueryorderComponent } from './queryorder.component';
+import {QueryorderComponent} from './queryorder.component';
 
 describe('QueryorderComponent', () => {
   let component: QueryorderComponent;
@@ -8,9 +8,9 @@ describe('QueryorderComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ QueryorderComponent ]
+      declarations: [QueryorderComponent]
     })
-    .compileComponents();
+      .compileComponents();
   }));
 
   beforeEach(() => {

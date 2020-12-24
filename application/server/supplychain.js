@@ -73,8 +73,7 @@ async function submitTx(request, txName, ...args) {
         }, error => {
             return Promise.reject(error);
         });
-    }
-    catch (error) {
+    } catch (error) {
         return Promise.reject(error);
     }
 }
@@ -177,18 +176,18 @@ supplychainRouter.route('/assign-shipper/:id').put(function (request, response) 
 
 // This changes the status on the order, and adds a ship id
 supplychainRouter.route('/create-shipment-for-order/:id').put(function (request, response) {
-    submitTx (request, 'createShipment', request.params.id, utils.getRandomNum())
-      .then((createShipmentResponse) => {
-          console.log('Process CreateShipment transaction.');
-          let order = Order.fromBuffer(createShipmentResponse);
-          console.log(`order ${order.orderId} : trackingInfo = ${order.trackingInfo}, state = ${order.currentOrderState}`);
-          response.status(STATUS_SUCCESS);
-          response.send(order);
-      }, (error) => {
-          response.status(STATUS_SERVER_ERROR);
-          response.send(utils.prepareErrorResponse(error, STATUS_SERVER_ERROR,
-              "There was a problem in creating shipment for order," + request.params.id));
-      });
+    submitTx(request, 'createShipment', request.params.id, utils.getRandomNum())
+        .then((createShipmentResponse) => {
+            console.log('Process CreateShipment transaction.');
+            let order = Order.fromBuffer(createShipmentResponse);
+            console.log(`order ${order.orderId} : trackingInfo = ${order.trackingInfo}, state = ${order.currentOrderState}`);
+            response.status(STATUS_SUCCESS);
+            response.send(order);
+        }, (error) => {
+            response.status(STATUS_SERVER_ERROR);
+            response.send(utils.prepareErrorResponse(error, STATUS_SERVER_ERROR,
+                "There was a problem in creating shipment for order," + request.params.id));
+        });
 });  //  process route /
 
 // This changes the status on the order
@@ -269,16 +268,15 @@ supplychainRouter.route('/register-user').post(function (request, response) {
                 //  So, it is assumed that only the admin has access to this api
                 //  register-user can only be called by a user with admin privileges.
 
-                utils.registerUser(userId, userPwd, userType, request.username).
-                    then((result) => {
-                        response.status(STATUS_SUCCESS);
-                        response.send(result);
-                    }, (error) => {
-                        response.status(STATUS_CLIENT_ERROR);
-                        response.send(utils.prepareErrorResponse(error, STATUS_CLIENT_ERROR,
-                            "User, " + userId + " could not be registered. "
-                            + "Verify if calling identity has admin privileges."));
-                    });
+                utils.registerUser(userId, userPwd, userType, request.username).then((result) => {
+                    response.status(STATUS_SUCCESS);
+                    response.send(result);
+                }, (error) => {
+                    response.status(STATUS_CLIENT_ERROR);
+                    response.send(utils.prepareErrorResponse(error, STATUS_CLIENT_ERROR,
+                        "User, " + userId + " could not be registered. "
+                        + "Verify if calling identity has admin privileges."));
+                });
             }, error => {
                 response.status(STATUS_CLIENT_ERROR);
                 response.send(utils.prepareErrorResponse(error, INVALID_HEADER,
@@ -336,7 +334,7 @@ supplychainRouter.route('/is-user-enrolled/:id').get(function (request, response
             }, error => {
                 response.status(STATUS_CLIENT_ERROR);
                 response.send(utils.prepareErrorResponse(error, STATUS_CLIENT_ERROR,
-                  "Error checking enrollment for user, " + request.params.id));
+                    "Error checking enrollment for user, " + request.params.id));
             });
         }, ((error) => {
             response.status(STATUS_CLIENT_ERROR);
@@ -356,7 +354,7 @@ supplychainRouter.route('/users').get(function (request, response) {
                 response.send(result);
             }, (error) => {
                 response.status(STATUS_SERVER_ERROR);
-                response.send(utils.prepareErrorResponse (error, STATUS_SERVER_ERROR,
+                response.send(utils.prepareErrorResponse(error, STATUS_SERVER_ERROR,
                     "Problem getting list of users."));
             });
         }, ((error) => {

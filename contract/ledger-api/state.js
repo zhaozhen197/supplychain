@@ -28,11 +28,11 @@ class State {
         return this.key;
     }
 
-    getSplitKey(){
+    getSplitKey() {
         return State.splitKey(this.key);
     }
 
-    getCurrentState(){
+    getCurrentState() {
         return this.currentState;
     }
 
@@ -54,14 +54,14 @@ class State {
      * Deserialize object into one of a set of supported JSON classes
      * i.e. Covert serialized data to JSON object
      * Typically used after getState() ledger API
-     * @param {data} data to deserialize into JSON object
+     * @param {Buffer} data to deserialize into JSON object
      * @param (supportedClasses) the set of classes data can be serialized to
      * @return {json} json with the data to store
      */
     static deserialize(data, supportedClasses) {
-        console.log ('\n******  SJ:  In deserialize in state.js:  \n');
-        console.log (data.toString());
-        console.log ('\n******  SJ\n ');
+        console.log('\n******  SJ:  In deserialize in state.js:  \n');
+        console.log(data.toString());
+        console.log('\n******  SJ\n ');
         let json = JSON.parse(data.toString());
         let objClass = supportedClasses[json.class];
         if (!objClass) {
@@ -92,7 +92,7 @@ class State {
         return keyParts.map(part => JSON.stringify(part)).join(':');
     }
 
-    static splitKey(key){
+    static splitKey(key) {
         return key.split(':');
     }
 

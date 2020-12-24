@@ -1,6 +1,6 @@
-import { Component, OnInit} from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ApiService, AuthService } from '../_services/index';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {ApiService, AuthService} from '../_services/index';
 
 import {MatTableDataSource} from '@angular/material/table';
 
@@ -11,7 +11,7 @@ import {MatTableDataSource} from '@angular/material/table';
   providers: []
 })
 
-export class UserManagementComponent implements OnInit{
+export class UserManagementComponent implements OnInit {
   newUser: Object;
   types: any[];
 
@@ -22,9 +22,10 @@ export class UserManagementComponent implements OnInit{
   allUsers: MatTableDataSource<EditUser[]>;
   columnsToDisplay = ['id', 'usertype', 'enrolled'];
 
-  constructor(private api: ApiService, private auth: AuthService, private formBuilder: FormBuilder){}
+  constructor(private api: ApiService, private auth: AuthService, private formBuilder: FormBuilder) {
+  }
 
-  ngOnInit(){
+  ngOnInit() {
     this.types = ["retailer", "producer", "shipper", "customer", "regulator"];
 
     this.newUserForm = this.formBuilder.group({
@@ -38,14 +39,14 @@ export class UserManagementComponent implements OnInit{
     this.loadUserList(0);
   }
 
-  onSubmit(){
+  onSubmit() {
     this.submitted = true;
 
     if (this.newUserForm.invalid) {
       return;
     }
 
-    if (this.newUserForm.controls.password.value != this.newUserForm.controls.confirm_password.value){
+    if (this.newUserForm.controls.password.value != this.newUserForm.controls.confirm_password.value) {
       console.log("the passwords don't match");
       this.success = false;
       return;

@@ -27,21 +27,21 @@
         </div>
       </label>
 
-     <label style="text-align:left">
+      <label style="text-align:left">
         Producer ID:
         <select class="form-control" formControlName="producerid" id="producerid">
           <option *ngFor="let producer of producers; let i = index" [value]="producers[i].id">
             {{producers[i].id}}
           </option>
-        </select> 
-     </label>
+        </select>
+      </label>
 
       <input type="submit" style="width:100%" value="Create Order" class="form-button">
 
     </form>
     <div *ngIf="submitted" class="results">
-        <p *ngIf="success; else elseBlock">Order Created Successfully!</p>
-        <ng-template #elseBlock></ng-template>
-      </div>
+      <p *ngIf="success; else elseBlock">Order Created Successfully!</p>
+      <ng-template #elseBlock></ng-template>
+    </div>
   </div>
 </div>

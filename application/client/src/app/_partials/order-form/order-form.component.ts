@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ApiService, UserService } from './../../_services/index';
-import { MatDialog } from '@angular/material';
+import {Component, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {ApiService, UserService} from './../../_services/index';
+import {MatDialog} from '@angular/material';
 
 @Component({
   selector: 'order-form',
@@ -25,7 +25,8 @@ export class OrderFormComponent implements OnInit {
     private router: Router,
     private api: ApiService,
     private user: UserService,
-    public dialog: MatDialog) { }
+    public dialog: MatDialog) {
+  }
 
   ngOnInit() {
     this.currentUser = this.user.getCurrentUser();

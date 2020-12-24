@@ -1,9 +1,9 @@
-// NOTE: This component isn't invoked from the UI application at this time.  
+// NOTE: This component isn't invoked from the UI application at this time.
 // Provided here in case this functionality is eventually needed in UI
 // The api/orders/<orderId> API is invoked directly from URL
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ApiService } from '../_services/api.service';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {ApiService} from '../_services/api.service';
 
 @Component({
   selector: 'app-contact',
@@ -17,7 +17,8 @@ export class QueryorderComponent implements OnInit {
   success = false;
   order: Object;
 
-  constructor(private formBuilder: FormBuilder, private api: ApiService) { }
+  constructor(private formBuilder: FormBuilder, private api: ApiService) {
+  }
 
   ngOnInit() {
 

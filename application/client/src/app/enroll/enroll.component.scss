@@ -1,29 +1,31 @@
 @import './../colors.scss';
-#enroll{
-  display:flex;
 
-  h2{
-    color:$dark-grey;
+#enroll {
+  display: flex;
+
+  h2 {
+    color: $dark-grey;
   }
 
-  .how-to{
+  .how-to {
     background-color: $off-white-grey;
     padding: 24px;
     color: $cool-teal;
   }
 
-  .btn-primary{
+  .btn-primary {
     color: $ghost-white;
     background-color: $cool-teal;
     border-color: $cool-teal;
   }
-  .btn-primary:hover{
+
+  .btn-primary:hover {
 
     background-color: $bright-green;
     border-color: $bright-green;
   }
 
-  .btn-link{
+  .btn-link {
     color: $cool-teal;
   }
 }

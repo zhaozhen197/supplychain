@@ -8,7 +8,7 @@
 // Bring key classes into scope, most importantly Fabric SDK network class
 const fs = require('fs');
 const path = require('path');
-const { FileSystemWallet, Gateway, User, X509WalletMixin } = require('fabric-network');
+const {FileSystemWallet, Gateway, User, X509WalletMixin} = require('fabric-network');
 const FabricCAServices = require('fabric-ca-client');
 
 //  global variables for HLFabric
@@ -39,7 +39,7 @@ utils.prepareErrorResponse = (error, code, message) => {
         errorMsg = null;
     }
 
-    let result = { "code": code, "message": errorMsg?errorMsg:message, "error": error };
+    let result = {"code": code, "message": errorMsg ? errorMsg : message, "error": error};
     console.log("utils.js:prepareErrorResponse(): " + message);
     console.log(result);
     return result;
@@ -103,7 +103,7 @@ utils.connectGatewayFromConfig = async () => {
         // Connect to gateway using application specified parameters
         console.log('Connect to Fabric gateway.');
         await gateway.connect(ccp, {
-            identity: userid, wallet: wallet, discovery: { enabled: true, asLocalhost: bLocalHost }
+            identity: userid, wallet: wallet, discovery: {enabled: true, asLocalhost: bLocalHost}
         });
 
         // Access channel: channel_name
@@ -166,7 +166,7 @@ utils.events = async () => {
                 // this is the callback if something goes wrong with the event registration or processing
                 reject(new Error('There was a problem with the eventhub in registerTxEvent ::' + err));
             },
-            { disconnect: false } //continue to listen and not disconnect when complete
+            {disconnect: false} //continue to listen and not disconnect when complete
         );
     }, (err) => {
         console.log("At creation of event_monitor: Error:" + err.toString());
@@ -176,18 +176,17 @@ utils.events = async () => {
     Promise.all([event_monitor]);
 }  //  end of events()
 
-utils.submitTx = async(contract, txName, ...args) => {
-    console.log(">>>utils.submitTx..."+txName+" ("+args+")");
+utils.submitTx = async (contract, txName, ...args) => {
+    console.log(">>>utils.submitTx..." + txName + " (" + args + ")");
     let result = contract.submitTransaction(txName, ...args);
-    return result.then (response => {
+    return result.then(response => {
         // console.log ('Transaction submitted successfully;  Response: ', response.toString());
-        console.log ('utils.js: Transaction submitted successfully');
+        console.log('utils.js: Transaction submitted successfully');
         return Promise.resolve(response.toString());
-    },(error) =>
-        {
-          console.log ('utils.js: Error:' + error.toString());
-          return Promise.reject(error);
-        });
+    }, (error) => {
+        console.log('utils.js: Error:' + error.toString());
+        return Promise.reject(error);
+    });
 }
 
 //  function registerUser
@@ -199,13 +198,13 @@ utils.registerUser = async (userid, userpwd, usertype, adminIdentity) => {
     const gateway = new Gateway();
 
     // Connect to gateway as admin
-    await gateway.connect(ccp, { wallet, identity: adminIdentity, discovery: { enabled: false, asLocalhost: bLocalHost } });
+    await gateway.connect(ccp, {wallet, identity: adminIdentity, discovery: {enabled: false, asLocalhost: bLocalHost}});
 
     const orgs = ccp.organizations;
     const CAs = ccp.certificateAuthorities;
     const fabricCAKey = orgs[orgMSPID].certificateAuthorities[0];
     const caURL = CAs[fabricCAKey].url;
-    const ca = new FabricCAServices(caURL, { trustedRoots: [], verify: false });
+    const ca = new FabricCAServices(caURL, {trustedRoots: [], verify: false});
 
     var newUserDetails = {
         enrollmentID: userid,
@@ -246,7 +245,7 @@ utils.enrollUser = async (userid, userpwd, usertype) => {
     const CAs = ccp.certificateAuthorities;
     const fabricCAKey = orgs[orgMSPID].certificateAuthorities[0];
     const caURL = CAs[fabricCAKey].url;
-    const ca = new FabricCAServices(caURL, { trustedRoots: [], verify: false });
+    const ca = new FabricCAServices(caURL, {trustedRoots: [], verify: false});
 
     var newUserDetails = {
         enrollmentID: userid,
@@ -300,14 +299,19 @@ utils.setUserContext = async (userid, pwd) => {
         // Connect to gateway using application specified parameters
         console.log('Connect to Fabric gateway with userid:' + userid);
         let userGateway = new Gateway();
-        await userGateway.connect(ccp, { identity: userid, wallet: wallet, discovery: { enabled: true, asLocalhost: bLocalHost } });
+        await userGateway.connect(ccp, {
+            identity: userid,
+            wallet: wallet,
+            discovery: {enabled: true, asLocalhost: bLocalHost}
+        });
 
         network = await userGateway.getNetwork(configdata["channel_name"]);
         contract = await network.getContract(configdata["smart_contract_name"]);
 
         return contract;
+    } catch (error) {
+        throw (error);
     }
-    catch (error) { throw (error); }
 }  //  end of setUserContext(userid)
 
 utils.isUserEnrolled = async (userid) => {
@@ -325,7 +329,7 @@ utils.getUser = async (userid, adminIdentity) => {
     console.log(">>>getUser...");
     const gateway = new Gateway();
     // Connect to gateway as admin
-    await gateway.connect(ccp, { wallet, identity: adminIdentity, discovery: { enabled: false, asLocalhost: bLocalHost } });
+    await gateway.connect(ccp, {wallet, identity: adminIdentity, discovery: {enabled: false, asLocalhost: bLocalHost}});
     let client = gateway.getClient();
     let fabric_ca_client = client.getCertificateAuthority();
     let idService = fabric_ca_client.newIdentityService();
@@ -338,9 +342,9 @@ utils.getUser = async (userid, adminIdentity) => {
     } else { // look through user attributes for "usertype"
         let j = 0;
         while (user.result.attrs[j].name !== "usertype") j++;
-            result.usertype = user.result.attrs[j].value;
+        result.usertype = user.result.attrs[j].value;
     }
-    console.log (result);
+    console.log(result);
     return Promise.resolve(result);
 }  //  end of function getUser
 
@@ -350,7 +354,7 @@ utils.getAllUsers = async (adminIdentity) => {
     const gateway = new Gateway();
 
     // Connect to gateway as admin
-    await gateway.connect(ccp, { wallet, identity: adminIdentity, discovery: { enabled: false, asLocalhost: bLocalHost } });
+    await gateway.connect(ccp, {wallet, identity: adminIdentity, discovery: {enabled: false, asLocalhost: bLocalHost}});
     let client = gateway.getClient();
     let fabric_ca_client = client.getCertificateAuthority();
     let idService = fabric_ca_client.newIdentityService();

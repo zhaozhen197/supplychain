@@ -30,30 +30,31 @@ class Order extends State {
     }
 
     /*
-    Definition:  Class Order:
-      {String}  orderId
-      {String} productId
-      {float}   price
-      {Integer} quantity
-      {String} producerId
-      {String} shipperId
-      {String} retailerId
-      {Enumerated orderStates} currentOrderState
-      {String} modifiedBy
+        Definition:  Class Order:
+          {String}  orderId
+          {String} productId
+          {float}   price
+          {Integer} quantity
+          {String} producerId
+          {String} shipperId
+          {String} retailerId
+          {Enumerated orderStates} currentOrderState
+          {String} modifiedBy
     */
 
     /**
      * Basic getters and setters
-    */
+     */
     getId() {
         return this.orderId;
     }
-/*  //  should never be called explicitly;
-    //  id is set at the time of constructor call.
-    setId(newId) {
-        this.id = newId;
-    }
-*/
+
+    /*  //  should never be called explicitly;
+        //  id is set at the time of constructor call.
+        setId(newId) {
+            this.id = newId;
+        }
+    */
     /**
      * Useful methods to encapsulate  Order states
      */

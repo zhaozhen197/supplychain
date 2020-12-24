@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { ApiService, UserService } from '../_services/index';
+import {Component} from '@angular/core';
+import {Router} from '@angular/router';
+import {ApiService, UserService} from '../_services/index';
 
 @Component({
   selector: 'app-login',
@@ -18,7 +18,8 @@ export class LoginComponent {
     private router: Router,
     private apiService: ApiService,
     private userService: UserService
-  ) { }
+  ) {
+  }
 
   login() {
     console.log("In login ()");

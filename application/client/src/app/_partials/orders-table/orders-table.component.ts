@@ -1,8 +1,8 @@
-import { Component, Inject, Input, OnInit, ChangeDetectorRef } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { ApiService, UserService } from '../../_services/index';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, TooltipPosition } from '@angular/material';
-import { animate, state, style, transition, trigger } from '@angular/animations';
+import {Component, Inject, Input, OnInit, ChangeDetectorRef} from '@angular/core';
+import {MatTableDataSource} from '@angular/material/table';
+import {ApiService, UserService} from '../../_services/index';
+import {MatDialog, MatDialogRef, MAT_DIALOG_DATA, TooltipPosition} from '@angular/material';
+import {animate, state, style, transition, trigger} from '@angular/animations';
 
 @Component({
   selector: 'orders-table',
@@ -11,8 +11,8 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
   providers: [],
   animations: [
     trigger('detailExpand', [
-      state('collapsed', style({ height: '0px', minHeight: '0' })),
-      state('expanded', style({ height: '*' })),
+      state('collapsed', style({height: '0px', minHeight: '0'})),
+      state('expanded', style({height: '*'})),
       transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
     ]),
   ],
@@ -26,7 +26,8 @@ export class OrdersTableComponent implements OnInit {
 
   @Input('regulator') regulator: boolean;
 
-  constructor(private api: ApiService, private user: UserService, private cd: ChangeDetectorRef, public dialog: MatDialog) { }
+  constructor(private api: ApiService, private user: UserService, private cd: ChangeDetectorRef, public dialog: MatDialog) {
+  }
 
   ngOnInit() {
     this.currentUser = this.user.getCurrentUser();
@@ -82,7 +83,7 @@ export class OrdersTableComponent implements OnInit {
     const dialogRef = this.dialog.open(ToShipperDialog, {
       disableClose: false,
       width: '600px',
-      data: { shippers: shippers }
+      data: {shippers: shippers}
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -143,7 +144,7 @@ export class OrdersTableComponent implements OnInit {
     const dialogRef = this.dialog.open(DeleteOrderDialog, {
       disableClose: false,
       width: '600px',
-      data: { order: order }
+      data: {order: order}
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -185,9 +186,11 @@ export interface ShipperDialogData {
 
 export class ToShipperDialog implements OnInit {
   model: any;
+
   constructor(
     public dialogRef: MatDialogRef<ToShipperDialog>,
-    @Inject(MAT_DIALOG_DATA) public data: ShipperDialogData) { }
+    @Inject(MAT_DIALOG_DATA) public data: ShipperDialogData) {
+  }
 
   ngOnInit() {
     this.model = {};
@@ -206,7 +209,9 @@ export interface DeleteDialogData {
 
 export class DeleteOrderDialog {
   model: any;
+
   constructor(
     public dialogRef: MatDialogRef<DeleteOrderDialog>,
-    @Inject(MAT_DIALOG_DATA) public data: DeleteDialogData) { }
+    @Inject(MAT_DIALOG_DATA) public data: DeleteDialogData) {
+  }
 }

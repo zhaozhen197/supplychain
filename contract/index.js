@@ -7,4 +7,4 @@
 //  const MyContract = require('./lib/my-contract');
 const MyContract = require('./lib/supplychaincontract');
 
-module.exports.contracts = [ MyContract ];
+module.exports.contracts = [MyContract];

@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService } from '../_services/index';
+import {Component} from '@angular/core';
+import {Router} from '@angular/router';
+import {AuthService} from '../_services/index';
 
 @Component({
   selector: 'app-enroll',
@@ -9,12 +9,12 @@ import { AuthService } from '../_services/index';
   providers: []
 })
 
-export class EnrollComponent{
+export class EnrollComponent {
   model: any = {};
   loading = false;
   types: any[];
 
-  constructor (private router: Router,private authService: AuthService) {
+  constructor(private router: Router, private authService: AuthService) {
     this.types = ["retailer", "producer", "shipper", "customer", "regulator"];
   }
 
