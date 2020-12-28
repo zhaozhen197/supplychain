@@ -111,7 +111,7 @@ class ProductOrder extends State {
     }
 
     static getClass() {
-        return 'org.supplychainnet.order';
+        return 'org.supplychainnet.productOrder';
     }
 }
 

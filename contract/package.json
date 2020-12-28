@@ -1,6 +1,6 @@
 {
   "name": "gensupplychainnet",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "My Smart Contract",
   "main": "index.js",
   "engines": {
@@ -17,8 +17,8 @@
   "author": "Customer Success Organization",
   "license": "Apache-2.0",
   "dependencies": {
-    "fabric-contract-api": "1.4.0",
-    "fabric-shim": "1.4.0"
+    "fabric-contract-api": "^1.4.6",
+    "fabric-shim": "^1.4.6"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -43,5 +43,8 @@
     "branches": 100,
     "functions": 100,
     "lines": 100
+  },
+  "env": {
+    "CORE_CHAINCODE_ID_NAME": "gensupplychainnet:0.0.2"
   }
 }

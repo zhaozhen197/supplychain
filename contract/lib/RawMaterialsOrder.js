@@ -7,12 +7,10 @@ const  rawMaterialsOrderState= require('./OrderState').rawMaterialsOrderState;
 
 class RawMaterialsOrder extends State {
 
-
     constructor(obj) {
         super(RawMaterialsOrder.getClass(), [obj.rawMaterialsOrderId]);
         Object.assign(this, obj);
     }
-
 
     /*
      * Definition:  RawMaterialsOrder Order:
@@ -23,16 +21,20 @@ class RawMaterialsOrder extends State {
      * {String}  manufacturer
      * {float}   price
      * {Integer} quantity
-       {String} shipperId
-       {Enumerated orderStates} currentOrderState
-       {String} modifiedBy
-       *{String[]} info
+     * {String} shipperId
+     * {Enumerated orderStates} currentOrderState
+     * {String} modifiedBy
+     * {String[]} info
+     * {String}  buyer
+     * {String} trackingInfo
+     * {String} storeType
+     *
      * */
     /**
      * Basic getters and setters
      */
     getId() {
-        return this.orderId;
+        return this.rawMaterialsOrderId;
     }
 
     setStateToRawMaterialsOrderCreated(){
@@ -86,7 +88,7 @@ class RawMaterialsOrder extends State {
     }
 
     static getClass() {
-        return 'org.supplychainnet.RawMaterialsOrder';
+        return 'org.supplychainnet.rawMaterialsOrder';
     }
 
 }

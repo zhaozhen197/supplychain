@@ -7,13 +7,19 @@ SPDX-License-Identifier: Apache-2.0
 // Fabric smart contract classes
 const {Contract, Context} = require('fabric-contract-api');
 
-// supplychainnet specifc classes
+//supplychainnet specifc classes
 const Order = require('./order.js');
-const OrderStates = require('./order.js').orderStates;
-
+const productOrderState = require('./OrderState.js').productOrderState;
+const rawMaterialsOrderState = require('./OrderState.js').rawMaterialsOrderState;
+const ProductOrder = require('./ProductOrder.js');
+const RawMaterialsOrder = require('./RawMaterialsOrder.js');
+const role =require('../ledger-api/role.js').role;
+const accountName =require('../ledger-api/role').accountName;
+const accountPassword = require('../ledger-api/role').accountPassword;
+const  RawMaterials = require('./RawMaterials');
 //  EVENT
 const EVENT_TYPE = "bcpocevent";
-
+const RAW_MATERIALS_EVENT_TYPE = "rwevent";
 //  Error codes
 const DUPLICATE_ORDER_ID = 101;
 const ORDER_ID_NOT_FOUND = 102;
@@ -55,59 +61,204 @@ class SupplychainContract extends Contract {
     }
 
     /**
-     * orderProduct
-     * To be used by a retailer when he orders a product
+     * rawMaterialsStore store rawMaterials f
+     * @param ctx
+     * @param args
+     * @returns {Promise<void>}
      *
-     * @param {Context} ctx the transaction context
-     * @param {String} orderId
-     * @param {String} productId
-     * @param {Float} price
-     * @param {Integer} quantity
-     * @param {String} producerId
-     * @param {String} retailerId
-
-     * Usage: submitTransaction ('orderProduct', 'Order001', 'mango', 100.00, 100, 'farm1', 'walmart')
-     * Usage: ["Order100", "mango", "10.00", "102", "farm1", "walmart"]
+     * Definition:  RawMaterials:
+     * RawMaterialsStore 入库原型
+     * {String}  rawMaterialsBatchId
+     * {String}  rawMaterialsType
+     * {String}  manufacturer
+     * {float}   price
+     * {Integer} quantity
+     * {String} shipperId
+     * {String} modifiedBy
+     * {String[]} info
+     * {String} qualityInspector
+     * {String} quality
      */
-    async orderProduct(ctx, args) {
-
-        // Access Control: This transaction should only be invoked by a Producer or Retailer
+    async stockStore(ctx,args){
+        // Access Control: This transaction should only be invoked by a Producer or admin
         let userType = await this.getCurrentUserType(ctx);
+        if((userType != role.ADMIN)&&
+            (userType != role.RAW_MATERIALS_STORE)){
+            throw  new Error(`This user does not have access to store rawMaterials`)
+        }
 
+        let rawMaterialsDetail = JSON.parse(args);
+        let manufacturer = rawMaterialsDetail.manufacturer;
+        let rawMaterialsType = rawMaterialsDetail.rawMaterialsType;
 
-        if ((userType != "admin") && // admin only has access as a precaution.
-            (userType != "producer") &&
-            (userType != "retailer"))
+        let tempArr = [];
+        tempArr.push(manufacturer);
+        tempArr.push(rawMaterialsType);
+        console.log("incoming asset fields: " + JSON.stringify(rawMaterialsDetail));
+
+        // Check if an order already exists with id=manufacturer:rawMaterialsType
+        let orderAsBytes = await ctx.stub.getState(tempArr.join(':'));
+        let rawMaterials;
+       if (orderAsBytes.length < 1) {
+            console.log(`Error Message from RawMaterials. it need to add rawMaterials to the store`);
+           rawMaterials = RawMaterials.createInstance(batchId);
+       }else {
+           rawMaterials = JSON.parse(orderAsBytes);
+           rawMaterials.quality = parseInt(rawMaterials.quantity)+rawMaterialsDetail.quantity;
+       }
+        rawMaterials.rawMaterialsBatchId = rawMaterialsDetail.rawMaterialsBatchId;
+        rawMaterials.rawMaterialsType = rawMaterialsDetail.rawMaterialsType;
+        rawMaterials.manufacturer = rawMaterialsDetail.manufacturer;
+        rawMaterials.price = rawMaterialsDetail.price.toString();
+        rawMaterials.quantity = rawMaterialsDetail.quantity.toString();
+        rawMaterials.shipperId = rawMaterialsDetail.shipperId;
+        rawMaterials.modifiedBy = await this.getCurrentUserId(ctx);
+        rawMaterials.info = rawMaterialsDetail.info;
+        rawMaterials.qualityInspector = rawMaterialsDetail.qualityInspector;
+        rawMaterials.quality = rawMaterialsDetail.quality;
+
+        // Update ledger,使用manufacturer:rawMaterialsType作为key存储至区块链。
+        await ctx.stub.putState(tempArr.join(':'), rawMaterials.toBuffer());
+        // Define and set event
+        const event_obj = rawMaterials;
+        event_obj.event_type = "rawMaterialsStock";   //  add the field "event_type" for the event to be processed
+
+        try {
+            await ctx.stub.setEvent(RAW_MATERIALS_EVENT_TYPE, event_obj.toBuffer());
+        } catch (error) {
+            console.log("Error in sending event");
+        } finally {
+            console.log("Attempted to send event = ", rawMaterials);
+        }
+
+        // Must return a serialized order to caller of smart contract
+        return rawMaterials.toBuffer();
+    }
+
+    /**
+     * 根据rawMaterialsType查询rawMaterialsStore的所有商品。
+     * @param ctx
+     */
+    async queryRawMaterialsByType(ctx,rawMaterialsType){
+        console.info('==========queryRawMaterialsByType==========')
+        if(rawMaterialsType.length < 1 || rawMaterialsType){
+            throw  new Error('rawMaterialsType is required as input')
+        }
+        let queryString = {
+            "selector":{
+                "$and":[
+                    {
+                        "rawMaterialsType":rawMaterialsType,
+                    },
+                    {
+                        info:"rawMaterialsStoreAdd"
+                    }
+                ]
+
+            }
+        }
+
+        console.log("In queryRawMaterialsByType:queryString=");
+        console.log(queryString);
+        // Get all orders that meet queryString criteria
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify(queryString));
+        const allRawMaterialsOfOneType = [];
+
+        while (true){
+            const rasMaterials = await iterator.next();
+            if(rasMaterials.value &&  rasMaterials.value.value.toString('utf8')){
+                console.log(rasMaterials.value.value.toString('utf8'));
+                let record;
+                try {
+                    record = JSON.parse(rasMaterials.value.value.toString('utf8'))
+                }catch (err){
+                    console.log(err);
+                    record = rasMaterials.value.value.toString('utf8');
+                }
+                allRawMaterialsOfOneType.push(record);
+            }
+
+            if(rasMaterials.done){
+                console.log('end of data');
+                await iterator.close();
+                console.info(allRawMaterialsOfOneType);
+                return allRawMaterialsOfOneType;
+            }
+        }
+    }
+    /**
+     * orderRawMaterials
+     * To be used by a producer when he orders some rawMaterials
+     *
+     * Definition:  RawMaterialsOrder Order:
+     *
+     * {String}  rawMaterialsOrderId
+     * {String}  rawMaterialsBatchId
+     * {String}  rawMaterialsType
+     * {String}  manufacturer
+     * {float}   price
+     * {Integer} quantity
+     * {String} shipperId
+     * {Enumerated orderStates} currentOrderState
+     * {String} modifiedBy
+     * {String[]} info
+     * {String}  buyer
+     * {String} trackingInfo
+     * {String} storeType
+     *
+     *
+     * Usage: submitTransaction ('orderRawMaterials', 'RawMaterialsOrder-001', 'RawMaterialsBatch-100', 'gear','CCP',100.00, 100, 'UPS', 'this is currentState','producer',[])
+     * Usage: ["orderRawMaterials", "RawMaterialsOrder-001", "RawMaterialsBatch-100", "gear","CCP",100.00, 100, "UPS", "this is currentState","producer",[]]
+     */
+    async orderRawMaterials(ctx, args) {
+
+        // Access Control: This transaction should only be invoked by a Producer
+        let userType = await this.getCurrentUserType(ctx);
+        if ((userType != role.ADMIN) && // admin only has access as a precaution.
+            (userType != role.PRODUCER))
             throw new Error(`This user does not have access to create an order`);
 
         const order_details = JSON.parse(args);
-        const orderId = order_details.orderId;
+        const orderId = order_details.rawMaterialsOrderId;
+        let tempArr  = [];
+        tempArr.push(order_details.manufacturer);
+        tempArr.push(order_details.rawMaterialsType);
 
         console.log("incoming asset fields: " + JSON.stringify(order_details));
-
-        // Check if an order already exists with id=orderId
-        var orderAsBytes = await ctx.stub.getState(orderId);
+        let rawMaterials = await ctx.stub.getStats(tempArr.join(':'));
+        rawMaterials = RawMaterials.deserialize(rawMaterials);
+        if (parseInt(rawMaterials.quantity)<order_details.quantity){
+            throw new Error(`the storage of  ${order_details.rawMaterialsType} is lower your need`)
+        }else{
+            rawMaterials.quantity = parseInt(rawMaterials.quantity) - order_details.quantity;
+            ctx.stub.putState(tempArr.join(':'),JSON.stringify(rawMaterials));
+        }
+        // Check if an order already exists with id=rawMaterialsOrderId
+        let orderAsBytes = await ctx.stub.getState(rawMaterialsOrderId);
         if (orderAsBytes && orderAsBytes.length > 0) {
             throw new Error(`Error Message from orderProduct. Order with orderId = ${orderId} already exists.`);
         }
 
-        // Create a new Order object
-        let order = Order.createInstance(orderId);
-        order.productId = order_details.productId;
+        //Create a new Order object
+        let order = RawMaterialsOrder.createInstance(orderId);
+        order.rawMaterialsOrderId = order_details.rawMaterialsOrderId;
+        order.rawMaterialsType = order_details.rawMaterialsType;
         order.price = order_details.price.toString();
         order.quantity = order_details.quantity.toString();
-        order.producerId = order_details.producerId;
-        order.retailerId = order_details.retailerId;
+        order.manufacturer = order_details.manufacturer;
         order.modifiedBy = await this.getCurrentUserId(ctx);
-        order.currentOrderState = OrderStates.ORDER_CREATED;
+        order.currentOrderState = rawMaterialsOrderState.RAW_MATERIALS_ORDER_CREATED;
         order.trackingInfo = '';
+        order.info = [];
+        order.buyer= order_details.buyer;
+        order.storeType = order_details.storeType;
 
         // Update ledger
         await ctx.stub.putState(orderId, order.toBuffer());
 
         // Define and set event
         const event_obj = order;
-        event_obj.event_type = "createOrder";   //  add the field "event_type" for the event to be processed
+        event_obj.event_type = "createRawMaterialsOrder";   //  add the field "event_type" for the event to be processed
 
         try {
             await ctx.stub.setEvent(EVENT_TYPE, event_obj.toBuffer());
@@ -122,38 +273,39 @@ class SupplychainContract extends Contract {
     }
 
     /**
-     * receiveOrder
-     * To be called by a Producer when an order is received (and he begins to process the order)
+     * receiveRawMaterialsOrder
+     * To be called by a RawMaterialsStore or admin when an RawMaterialsOrder is received (and he begins to process the order)
      *
      * @param {Context} ctx the transaction context
      * @param {String}  orderId
      * Usage:  receiveOrder ('Order001')
      */
-    async receiveOrder(ctx, orderId) {
-        console.info('============= receiveOrder ===========');
+    async receiveRawMaterialsOrder(ctx, orderId) {
+        console.info('============= receiveRawMaterialsOrder ===========');
 
         if (orderId.length < 1) {
-            throw new Error('orderId is required as input')
+            throw new Error('rawMaterialsOrderId is required as input')
         }
 
         // Retrieve the current order using key provided
-        var orderAsBytes = await ctx.stub.getState(orderId);
+        let orderAsBytes = await ctx.stub.getState(orderId);
         if (!orderAsBytes || orderAsBytes.length === 0) {
-            throw new Error(`Error Message from receiveOrder: Order with orderId = ${orderId} does not exist.`);
+            throw new Error(`Error Message from receiveOrder: Order with rawMaterialsOrderId = ${orderId} does not exist.`);
         }
 
         // Convert order so we can modify fields
-        var order = Order.deserialize(orderAsBytes);
+        let order = RawMaterialsOrder.deserialize(orderAsBytes);
 
         // Access Control: This transaction should only be invoked by designated Producer
         let userId = await this.getCurrentUserId(ctx);
+        let userType = await this.getCurrentUserType(ctx);
 
-        if ((userId != "admin") && // admin only has access as a precaution.
-            (userId != order.producerId))
+        if ((userId != accountName.ADMIN) && // admin only has access as a precaution.
+            userType != role.RAW_MATERIALS_STORE)
             throw new Error(`${userId} does not have access to receive order ${orderId}`);
 
         // Change currentOrderState
-        order.setStateToOrderReceived();
+        order.setStateToRawMaterialsOrderReceived();
 
         // Track who is invoking this transaction
         order.modifiedBy = userId;
@@ -166,16 +318,16 @@ class SupplychainContract extends Contract {
     }
 
     /**
-     * assignShipper
-     *
+     * assignRawMaterialsOrderShipper
+     * assign as shipper for the RawMaterialsOrder
      * @param {Context} ctx the transaction context
-     * @param {String}  orderId
+     * @param {String}  orderId of  RawMaterialsOrder
      * @param {String}  newShipperId
      *
      * Usage:  assignShipper ('Order001', 'UPS')
      */
-    async assignShipper(ctx, orderId, newShipperId) {
-        console.info('============= assignShipper ===========');
+    async assignRawMaterialsOrderShipper(ctx, orderId, newShipperId) {
+        console.info('============= assignRawMaterialsOrderShipper ===========');
 
         if (orderId.length < 1) {
             throw new Error('orderId is required as input')
@@ -186,23 +338,24 @@ class SupplychainContract extends Contract {
         }
 
         //  Retrieve the current order using key provided
-        var orderAsBytes = await ctx.stub.getState(orderId);
+        let orderAsBytes = await ctx.stub.getState(orderId);
         if (!orderAsBytes || orderAsBytes.length === 0) {
             throw new Error(`Error Message from assignShipper: Order with orderId = ${orderId} does not exist.`);
         }
 
         // Convert order so we can modify fields
-        var order = Order.deserialize(orderAsBytes);
+        let order = RawMaterialsOrder.deserialize(orderAsBytes);
 
         // Access Control: This transaction should only be invoked by designated Producer
         let userId = await this.getCurrentUserId(ctx);
+        let userType = await this.getCurrentUserType(ctx);
 
-        if ((userId != "admin") && // admin only has access as a precaution.
-            (userId != order.producerId))
+        if ((userId != accountName.ADMIN) && // admin only has access as a precaution.
+            (userType != role.RAW_MATERIALS_STORE ))
             throw new Error(`${userId} does not have access to assign a shipper to order ${orderId}`);
 
         // Change currentOrderState to SHIPMENT_ASSIGNED;
-        order.setStateToShipmentAssigned();
+        order.setStateToRawMaterialsOrderShipmentAssigned();
         // Set shipperId
         order.shipperId = newShipperId;
         // Track who is invoking this transaction
@@ -216,15 +369,15 @@ class SupplychainContract extends Contract {
     }
 
     /**
-     * createShipment
+     * createRawMaterialsOrderShipment
      *
      * @param {Context} ctx the transaction context
      * @param {String}  orderId
      * @param {String}  trackingInfo
      * Usage:  createShipment ('Order001', '34590279RKE9D339')
      */
-    async createShipment(ctx, orderId, newTrackingInfo) {
-        console.info('============= createShipment ===========');
+    async createRawMaterialsOrderShipment(ctx, orderId, newTrackingInfo) {
+        console.info('============= createRawMaterialsOrderShipment ===========');
 
         //  NOTE: There is no shipment asset.  A shipment is created for each order.
         //  Shipment is tracked using order asset.
@@ -244,17 +397,18 @@ class SupplychainContract extends Contract {
         }
 
         // Convert order so we can modify fields
-        var order = Order.deserialize(orderAsBytes);
+        var order = RawMaterialsOrder.deserialize(orderAsBytes);
 
         // Access Control: This transaction should only be invoked by a designated Shipper
         let userId = await this.getCurrentUserId(ctx);
 
-        if ((userId != "admin") && // admin only has access as a precaution.
+        if ((userId != accountName.ADMIN) && // admin only has access as a precaution.
             (userId != order.shipperId))
             throw new Error(`${userId} does not have access to create a shipment for order ${orderId}`);
 
         // Change currentOrderState to SHIPMENT_CREATED;
-        order.setStateToShipmentCreated();
+        order.setStateToRawMaterialsOrderShipmentCreated();
+
         // Set Tracking info
         order.trackingInfo = newTrackingInfo;
         // Track who is invoking this transaction
@@ -268,7 +422,7 @@ class SupplychainContract extends Contract {
     }
 
     /**
-     * transportShipment
+     * rawMaterialsOrderTransportShipment
      *
      * @param {Context} ctx the transaction context
      * @param {String}  orderId
@@ -283,23 +437,23 @@ class SupplychainContract extends Contract {
         }
 
         // Retrieve the current order using key provided
-        var orderAsBytes = await ctx.stub.getState(orderId);
+        let orderAsBytes = await ctx.stub.getState(orderId);
         if (!orderAsBytes || orderAsBytes.length === 0) {
             throw new Error(`Error Message from transportShipment: Order with orderId = ${orderId} does not exist.`);
         }
 
         // Retrieve the current order using key provided
-        var order = Order.deserialize(orderAsBytes);
+        let order = RawMaterialsOrder.deserialize(orderAsBytes);
 
         // Access Control: This transaction should only be invoked by designated designated Shipper
         let userId = await this.getCurrentUserId(ctx);
 
-        if ((userId != "admin") // admin only has access as a precaution.
+        if ((userId != accountName.ADMIN) // admin only has access as a precaution.
             && (userId != order.shipperId)) // This transaction should only be invoked by
             throw new Error(`${userId} does not have access to transport shipment for order ${orderId}`);
 
         // Change currentOrderState to SHIPMENT_IN_TRANSIT;
-        order.setStateToShipmentInTransit();
+        order.setStateToRawMaterialsOrderShipmentInTransit();
         // Track who is invoking this transaction
         order.modifiedBy = userId;
 
@@ -311,7 +465,7 @@ class SupplychainContract extends Contract {
     }
 
     /**
-     * receiveShipment:
+     * receiveRawMaterialsOrderShipment:
      * To be called by Retailer when a shipment (corresponding to orderId) is received.
      *
      * @param {Context} ctx the transaction context
@@ -332,17 +486,18 @@ class SupplychainContract extends Contract {
         }
 
         // Retrieve the current order using key provided
-        var order = Order.deserialize(orderAsBytes);
+        var order = RawMaterialsOrder.deserialize(orderAsBytes);
 
         // Access Control: This transaction should only be invoked by designated originating Retailer
         let userId = await this.getCurrentUserId(ctx);
+        let userType = await this.getCurrentUserType(ctx);
 
-        if ((userId != "admin") // admin only has access as a precaution.
-            && (userId != order.retailerId)) // This transaction should only be invoked by
+        if ((userId != accountName.ADMIN) // admin only has access as a precaution.
+            && (userId != order.buyer)) // This transaction should only be invoked by
             throw new Error(`${userId} does not have access to receive shipment for order ${orderId}`);
 
         // Change currentOrderState to SHIPMENT_RECEIVED;
-        order.setStateToShipmentReceived();
+        order.setStateToRawMaterialsOrderShipmentReceived();
         // Track who is invoking this transaction
         order.modifiedBy = userId;
 
@@ -385,13 +540,15 @@ class SupplychainContract extends Contract {
 
         // Access Control:
 
-        var order = Order.deserialize(orderAsBytes);
+        let order = RawMaterialsOrder.deserialize(orderAsBytes);
         let userId = await this.getCurrentUserId(ctx);
+        let userType = await this.getCurrentUserType(ctx);
 
-        if ((userId != "admin") // admin only has access as a precaution.
-            && (userId != order.producerId) // This transaction should only be invoked by
-            && (userId != order.retailerId) //     Producer, Retailer, Shipper associated with order
-            && (userId != order.shipperId))
+        if ((userId != accountName.ADMIN) // admin only has access as a precaution.
+            && (userType != role.RAW_MATERIALS_STORE) // This transaction should only be invoked by
+            && (userId != order.buyer) //     RawMaterialsStore, buyer, Shipper associated with order
+            && (userId != order.shipperId)
+            &&(userType != role.REGULATOR))
             throw new Error(`${userId} does not have access to the details of order ${orderId}`);
 
         // Return a serialized order to caller of smart contract
@@ -422,22 +579,22 @@ class SupplychainContract extends Contract {
         // Access control done using query strings
         switch (userType) {
 
-            case "admin":
-            case "regulator": {
+            case role.ADMIN:{
+
+            }
+            case role.REGULATOR: {
                 queryString = {
                     "selector": {}  //  no filter;  return all orders
                 }
                 break;
             }
-            case "producer": {
+            case role.RAW_MATERIALS_STORE: {
                 queryString = {
-                    "selector": {
-                        "producerId": userId
-                    }
+                    "selector": {"storeType":role.RAW_MATERIALS_STORE}
                 }
                 break;
             }
-            case "shipper": {
+            case role.SHIPPER: {
                 queryString = {
                     "selector": {
                         "shipperId": userId
@@ -445,15 +602,7 @@ class SupplychainContract extends Contract {
                 }
                 break;
             }
-            case "retailer": {
-                queryString = {
-                    "selector": {
-                        "retailerId": userId
-                    }
-                }
-                break;
-            }
-            case "customer": {
+            case role.CUSTOMER: {
                 throw new Error(`${userId} does not have access to this transaction`);
             }
             default: {
@@ -524,16 +673,16 @@ class SupplychainContract extends Contract {
         let userType = await this.getCurrentUserType(ctx);
 
         // Access Control:
-        if ((userId != "admin")             // admin only has access as a precaution.
-            && (userType != "customer")      // Customers can see any order if it's in the correct state
-            && (userType != "regulator")     // Regulators can see any order
-            && (userId != order.producerId) // Only producer, retailer, shipper associated
-            && (userId != order.retailerId) //      with this order can see its details
+        if ((userId != accountName.ADMIN)             // admin only has access as a precaution.
+            && (userType != role.CUSTOMER)      // Customers can see any order if it's in the correct state
+            && (userType != role.REGULATOR)     // Regulators can see any order,store also get any order
+            && (userId != order.producerId) // Only producer, shipper associated
+            && (userType !=role.RAW_MATERIALS_STORE) //      with this order can see its details
             && (userId != order.shipperId))
             throw new Error(`${userId} does not have access to order ${orderId}`);
 
         // Customer can only view order history if order has completed cycle
-        if ((userType == "customer") && (order.currentOrderState != OrderStates.SHIPMENT_RECEIVED))
+        if ((userType == role.CUSTOMER) && (order.currentOrderState != rawMaterialsOrderState.RAW_MATERIALS_ORDER_SHIPMENT_RECEIVED))
             throw new Error(`Information about order ${orderId} is not available to ${userId} yet. Order status needs to be SHIPMENT_RECEIVED.`);
 
         console.info('start GetHistoryForOrder: %s', orderId);
@@ -552,7 +701,7 @@ class SupplychainContract extends Contract {
                 // Convert Timestamp date
                 var d = new Date(0);
                 d.setUTCSeconds(history.value.timestamp.seconds.low);
-                jsonRes.Timestamp = d.toLocaleString("en-US", {timeZone: "America/Chicago"}) + " CST";
+                jsonRes.Timestamp = d.toLocaleString("zh-CN", {timeZone: "Asia/Shanghai"});
                 // Store Order details
                 try {
                     jsonRes.Value = JSON.parse(history.value.value.toString('utf8'));
@@ -598,12 +747,13 @@ class SupplychainContract extends Contract {
         }
 
         // Access Control: This transaction should only be invoked by designated originating Retailer or Producer
-        var order = Order.deserialize(orderAsBytes);
+        var order = RawMaterialsOrder.deserialize(orderAsBytes);
         let userId = await this.getCurrentUserId(ctx);
+        let userType = await this.getCurrentUserType(ctx);
 
-        if ((userId != "admin") // admin only has access as a precaution.
-            && (userId != order.retailerId) // This transaction should only be invoked by Producer or Retailer of order
-            && (userId != order.producerId))
+        if ((userId != accountName.ADMIN) // admin only has access as a precaution.
+            && (userId != order.buyer) // This transaction should only be invoked by Producer or Retailer of order
+            && (userType != role.RAW_MATERIALS_STORE))
             throw new Error(`${userId} does not have access to delete order ${orderId}`);
 
         await ctx.stub.deleteState(orderId); //remove the order from chaincode state
@@ -644,6 +794,9 @@ class SupplychainContract extends Contract {
         }
         return ctx.clientIdentity.getAttributeValue("usertype");
     }
+
+
 }  //  Class SupplychainContract
 
-module.exports = SupplychainContract;
+module.exports.SupplychainContract = SupplychainContract;
+module.exports.SupplychainContext = SupplychainContext;
